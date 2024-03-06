@@ -46,16 +46,14 @@ class TaskExternalLinkController extends BaseController
 
         try {
             $urls = explode("\r\n", isset($values['text']) ? $values['text'] : '');
-            //$urls = $link->getUrl();
             $index = 0;
-            //Add render form open template
+
             $this->response->html($this->template->render('task_external_link/formOpen', array('task' => $task)));
             foreach($urls as $url){
                 if(!empty($url)){
                     $values['text'] = $url;
                     $provider = $this->externalLinkManager->setUserInput($values)->find();
                     $link = $provider->getLink();
-                    //render task_external_link/form 
                     $this->response->html($this->template->render('task_external_link/form', array(
                         'values' => array(
                             'title-'.$index => $link->getTitle(),
@@ -70,10 +68,8 @@ class TaskExternalLinkController extends BaseController
                 }
                 $index = $index + 1;
             }
-            // render form close with submit button
-            
             $this->response->html($this->template->render('task_external_link/formClose'));
-            $this->response->html("<h1>Save Both!</h1>");
+
         } catch (ExternalLinkProviderNotFound $e) {
             $errors = array('text' => array(t('Unable to fetch link information.')));
             $this->find($values, $errors);
@@ -89,31 +85,28 @@ class TaskExternalLinkController extends BaseController
     {
         $task = $this->getTask();
         $values = $this->request->getValues();
-        $countd = count($values)/4;
-        // get values by id to keep form data together
-        $values['task_id'] = $task['id'];
-        #echo implode(',',$values);
 
+        $countd = count($values)/4;
         $index = 0;
         while($index < $countd){
-            $varValues = array();
-            $varValues['task_id'] = $task['id'];
-            $varValues['url'] = $values['url-'.$index];
-            $varValues['title'] = $values['title-'.$index];
-            $varValues['link_type'] = $values['link_type-'.$index];
-            $varValues['dependency'] = $values['dependency-'.$index];
-            list($valid, $errors) = $this->externalLinkValidator->validateCreation($varValues);
+            $linkValues = array();
+            $linkValues['task_id'] = $task['id'];
+            $linkValues['url'] = $values['url-'.$index];
+            $linkValues['title'] = $values['title-'.$index];
+            $linkValues['link_type'] = $values['link_type-'.$index];
+            $linkValues['dependency'] = $values['dependency-'.$index];
+            list($valid, $errors) = $this->externalLinkValidator->validateCreation($linkValues);
             if ($valid) {
-                if ($this->taskExternalLinkModel->create($varValues) !== false) {
+                if ($this->taskExternalLinkModel->create($linkValues) !== false) {
                     $this->flash->success(t('Link added successfully.'));
                 } else {
                     $this->flash->success(t('Unable to create your link.'));
                 }
 
             } else {
-                $provider = $this->externalLinkManager->getProvider($varValues['link_type']);
+                $provider = $this->externalLinkManager->getProvider($linkValues['link_type']);
                 $this->response->html($this->template->render('task_external_link/create', array(
-                    'values' => $varValues,
+                    'values' => $linkValues,
                     'errors' => $errors,
                     'dependencies' => $provider->getDependencies(),
                     'task' => $task,
